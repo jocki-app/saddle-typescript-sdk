@@ -69,7 +69,7 @@ export async function operate(request: UnitRequest, options: {signal?: AbortSign
       await sync.attach(vault);
     }
     let result:unknown;
-    const versions=()=>file ? vault.history(file.id) : vault.folderHistory("");
+    const versions=()=>file ? (vault.historyEnabled(file.id) ? vault.history(file.id) : []) : (vault.folderFeatures("").history ? vault.folderHistory("") : []);
     if(request.method==="unit.inspect")result={id:file?.id ?? vault.id,kind:folder ? "folder" : "file",features:file ? vault.features(file.id) : vault.folderFeatures(""),metadata:file ? vault.metadata(file.id) : null};
     else if(request.method==="metadata.get")result=file ? vault.metadata(file.id) : ((await vault.companions.read("", "resource.json")) ? JSON.parse(text.decode((await vault.companions.read("", "resource.json"))!)) : null);
     else if(request.method==="metadata.set") {
