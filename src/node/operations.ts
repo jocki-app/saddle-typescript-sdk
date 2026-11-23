@@ -14,7 +14,7 @@ import { ProtectedFileSync } from "../units/protected-sync.js";
 import { shareLink, parseShareLink } from "../units/share-invitation.js";
 import { parseResource, serializeResource } from "../units/metadata.js";
 import { companionPath } from "../units/companions.js";
-import type { VaultFileSystem } from "../units/contracts.js";
+import type { FileSystemEntry, VaultFileSystem } from "../units/contracts.js";
 import { utf8, text } from "../crypto.js";
 
 export interface UnitRequest {
@@ -51,21 +51,25 @@ function fileBoundary(fs: NodeVaultFiles, name: string): VaultFileSystem {
       throw Error("Path is outside the selected file capability");
     return value;
   };
+  const scan = async () =>
+    (await Promise.all([...allowed].map((p) => fs.stat(p)))).filter(
+      (entry): entry is FileSystemEntry => entry !== undefined,
+    );
   return {
     read: (p) => fs.read(check(p)),
     writeAtomic: (p, v) => fs.writeAtomic(check(p), v),
     remove: (p) => fs.remove(check(p)),
     readRange: (p, o, n) => fs.readRange(check(p), o, n),
     writeAt: (p, o, v) => fs.writeAt(check(p), o, v),
-    list: async () => (await fs.list()).filter((p) => allowed.has(p)),
-    scan: async () => (await fs.scan()).filter((p) => allowed.has(p.path)),
+    list: async () => (await scan()).map((entry) => entry.path),
+    scan,
     stat: (p) => fs.stat(check(p)),
     directories: async () => [],
   };
 }
 export async function operate(
   request: UnitRequest,
-  options: { signal?: AbortSignal } = {},
+  options: { signal?: AbortSignal; onReady?: () => void } = {},
 ): Promise<unknown> {
   if (
     !request ||
@@ -73,6 +77,28 @@ export async function operate(
     typeof request.target !== "string"
   )
     throw Error("A method and explicit target path are required");
+  const methods = new Set([
+    "unit.inspect",
+    "archive.list",
+    "archive.verify",
+    "archive.get",
+    "archive.put",
+    "metadata.get",
+    "metadata.set",
+    "history.list",
+    "history.configure",
+    "history.reset",
+    "history.delete",
+    "sharing.contact",
+    "sharing.list",
+    "sharing.configure",
+    "sharing.invite",
+    "sharing.join",
+    "sharing.grant",
+    "sharing.broadcast",
+    "sharing.serve",
+  ]);
+  if (!methods.has(request.method)) throw Error("Unknown SADDLE operation");
   const absolute = path.resolve(request.target);
   if (request.method.startsWith("archive.")) {
     const archive = absolute.endsWith(".saddle")
@@ -108,10 +134,10 @@ export async function operate(
           throw Error("A record and base64 payload are required");
         if (request.record.endsWith(".automerge"))
           throw Error("Use history operations for retained documents");
-        await records.writeAtomic(
-          request.record,
-          Buffer.from(request.bytes, "base64"),
-        );
+        const payload = Buffer.from(request.bytes, "base64");
+        if (payload.toString("base64") !== request.bytes)
+          throw Error("Expected canonical base64 record bytes");
+        await records.writeAtomic(request.record, payload);
         return { saved: true };
       }
       throw Error("Unknown archive operation");
@@ -151,6 +177,7 @@ export async function operate(
     }),
     unlock = await fs.acquireWriter();
   const errors: unknown[] = [];
+  let stopOnError: (() => void) | undefined;
   let repository: Awaited<ReturnType<typeof openNodeRepository>> | undefined;
   let sync: ProtectedFileSync | undefined;
   try {
@@ -180,7 +207,10 @@ export async function operate(
         repository,
         local,
         workspace,
-        (error) => errors.push(error),
+        (error) => {
+          errors.push(error);
+          stopOnError?.();
+        },
       );
       await sync.attach(vault);
     }
@@ -252,7 +282,55 @@ export async function operate(
       else if (file) await vault.rewriteFileHistory(file.id, operation);
       else await vault.rewriteFolderHistory("", operation);
       result = { rewritten: true };
-    } else if (request.method === "sharing.list")
+    } else if (request.method === "sharing.serve") {
+      if (!options.signal)
+        throw Error("Serving requires an explicit cancellation signal");
+      const signal = options.signal;
+      let stop!: () => void;
+      const stopped = new Promise<void>((resolve) => {
+        stop = resolve;
+      });
+      stopOnError = stop;
+      signal.addEventListener("abort", stop, { once: true });
+      let pending = Promise.resolve();
+      let watcher: VaultWatcher | undefined;
+      try {
+        watcher = await VaultWatcher.open(
+          root,
+          (changes) => {
+            pending = pending
+              .then(async () => {
+                await vault.reconcile(changes);
+                await sync!.flush();
+              })
+              .catch((error) => {
+                errors.push(error);
+                stop();
+              });
+          },
+          (error) => {
+            errors.push(error);
+            stop();
+          },
+          {
+            exclude: excluded,
+            paths: folder ? undefined : [name, companionPath(name)],
+          },
+        );
+        await sync!.flush();
+        options.onReady?.();
+        if (signal.aborted || errors.length) stop();
+        await stopped;
+      } finally {
+        signal.removeEventListener("abort", stop);
+        stopOnError = undefined;
+        await watcher?.close();
+        await pending;
+      }
+      result = { stopped: true };
+    } else if (request.method === "sharing.contact")
+      result = { contact: repository!.contactCard };
+    else if (request.method === "sharing.list")
       result = await sync!.listShares();
     else if (request.method === "sharing.invite")
       result = {
@@ -267,6 +345,8 @@ export async function operate(
     } else if (request.method === "sharing.grant") {
       if (!request.invitation || !request.contact)
         throw Error("An invitation and approved contact card are required");
+      if (!["read", "edit"].includes(request.role ?? "read"))
+        throw Error("Access must be read or edit");
       await sync!.grant(
         parseShareLink(request.invitation),
         request.contact,

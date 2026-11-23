@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/jocki-app/saddle-specification",
+  "revision": "d02399fe5dd596062074dad18ec57a26eeecfa28",
+  "version": "1.0.0",
+  "sha256": {
+    "containers.json": "92746cd9fbdb0953e30c4bdd69ae6e94dd2105a1b46fb6114b5cf7c360875342",
+    "frontmatter.json": "8163736b4a7be38db8a9431a548ffec3ca86c4794e8ab3038c2dec0a431e4524",
+    "resources.json": "4cb44e57419f907eb7b679d0d3ddb4b3609886cf0cc8f9fef0bcc46ea50cb20a"
+  }
+}

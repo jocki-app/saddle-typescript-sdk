@@ -6,6 +6,11 @@ const resourceError = (error: unknown) =>
     (error as NodeJS.ErrnoException).code ?? "",
   );
 
+export interface WatchOptions {
+  exclude?: string[];
+  paths?: string[];
+}
+
 /** Group filesystem event bursts for content-based rename inference. */
 export class VaultWatcher {
   private changes = new Map<string, FileSystemChange>();
@@ -17,13 +22,15 @@ export class VaultWatcher {
     private root: string,
     private changed: (changes?: FileSystemChange[]) => void,
     private report: (error: unknown) => void,
+    private options: WatchOptions,
   ) {}
   static async open(
     root: string,
     changed: (changes?: FileSystemChange[]) => void,
     error: (error: unknown) => void = console.error,
+    options: WatchOptions = {},
   ) {
-    const subscription = new VaultWatcher(root, changed, error);
+    const subscription = new VaultWatcher(root, changed, error, options);
     await subscription.start("auto");
     return subscription;
   }
@@ -39,7 +46,7 @@ export class VaultWatcher {
   private async start(backend: "auto" | "polling") {
     if (this.closed) return;
     const watcher = (this.watcher = watch(
-      [
+      this.options.paths?.map((file) => path.join(this.root, file)) ?? [
         this.root,
         path.join(
           path.dirname(this.root),
@@ -54,6 +61,13 @@ export class VaultWatcher {
         atomic: 200,
         awaitWriteFinish: { stabilityThreshold: 250, pollInterval: 50 },
         ignored: (file) =>
+          this.options.exclude?.some((excluded) => {
+            const relative = path
+              .relative(this.root, file)
+              .split(path.sep)
+              .join("/");
+            return relative === excluded || relative.startsWith(excluded + "/");
+          }) ||
           path
             .relative(this.root, file)
             .split(path.sep)

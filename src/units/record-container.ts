@@ -105,7 +105,9 @@ export class RecordFiles implements VaultFileSystem {
         !same((await checksum(bytes)).subarray(0, 8), slot.hash)
       )
         continue;
-      const index = JSON.parse(text.decode(bytes)) as Index;
+      const index = JSON.parse(
+        new TextDecoder("utf-8", { fatal: true }).decode(bytes),
+      ) as Index;
       if (!index || typeof index !== "object" || Array.isArray(index))
         throw Error("Invalid SADDLE record index");
       for (const [name, entry] of Object.entries(index)) {

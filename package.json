@@ -16,7 +16,8 @@
     "docs",
     "vendor",
     "native",
-    "scripts"
+    "scripts",
+    "conformance"
   ],
   "exports": {
     ".": {
@@ -79,7 +80,8 @@
   "devDependencies": {
     "typescript": "^5.9.3",
     "vitest": "5.0.3",
-    "@types/node": "^24.0.1"
+    "@types/node": "^24.0.1",
+    "@automerge/automerge-repo-network-messagechannel": "2.6.0-subduction.49"
   },
   "engines": {
     "node": ">=26.10.0"

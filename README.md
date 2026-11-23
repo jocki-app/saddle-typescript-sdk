@@ -19,7 +19,11 @@ try {
   await release();
 }
 
-await operate({method: "history.configure", target: "/path/to/notes.md", state: "enabled"});
+await operate({
+  method: "history.configure",
+  target: "/path/to/notes.md",
+  state: "enabled",
+});
 ```
 
 `operate` is the same explicit API exposed through the CLI's JSON protocol and Python runtime binding. It supports inspection, resource metadata, history policies/list/reset/deletion, share grants and per-scope broadcast. Serving exchange requires an explicit cancellation signal and configured transport endpoints. No replicated data can invoke these local APIs.
@@ -47,3 +51,7 @@ CSDB projection is an optional format adapter included with the unit engine; the
 Run the SDK tests plus the consuming client's synchronization/security and platform integration suites when changing unit contracts. Archive writes must be durable before acknowledgement. Retention operations must preserve known peers' authority and dirty drafts. Never commit runtime identities or invitations.
 
 GPL-3.0-only. See [LICENSE](LICENSE).
+
+Release procedure and registry setup: [releases](docs/releases.md).
+
+Exact entry points and operation fields: [public API](docs/api.md). Both SDKs run the [shared conformance cases](conformance/source.json); this SDK additionally tests real authenticated peers, read-only refusal, offline retention and filesystem service cancellation.

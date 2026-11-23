@@ -4,7 +4,7 @@ export function filePath(value: string): string {
     !value ||
     value.startsWith("/") ||
     value.includes("\\") ||
-    /[\x00-\x1f:]/.test(value)
+    /[\x00-\x1f\x7f:]/.test(value)
   )
     throw Error("Expected a relative vault path");
   const parts = value.split("/");
