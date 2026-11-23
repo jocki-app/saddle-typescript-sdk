@@ -414,8 +414,7 @@ export class FileVault {
     const packages = inventory
       ? inventory.filter((e) => e.kind === "companion").map((e) => e.path)
       : (await this.fs.list()).filter(
-          (p) =>
-            p.split("/").at(-1)!.startsWith(".") && p.endsWith(".saddle"),
+          (p) => p.split("/").at(-1)!.startsWith(".") && p.endsWith(".saddle"),
         );
     const descriptors: Array<[string, CompanionDescriptor, string?]> = [];
     for (const path of packages) {
@@ -2913,10 +2912,7 @@ export class FileVault {
             (path) =>
               !path
                 .split("/")
-                .some(
-                  (part) =>
-                    part === ".saddle" || part.endsWith(".saddle"),
-                ),
+                .some((part) => part === ".saddle" || part.endsWith(".saddle")),
           );
       const present = new Set(paths);
       const known = Object.entries(this.state.files).filter(

@@ -14,9 +14,9 @@ it("keeps named binary records independent, preserves unknown records and serial
   ]);
   expect(text.decode(await a.read("descriptor.json"))).toBe("descriptor");
   expect(await b.read("plugin/example")).toEqual(new Uint8Array([0, 255]));
-  expect(
-    text.decode((await fs.read(".note.md.saddle"))!.subarray(0, 8)),
-  ).toBe("SADDLE01");
+  expect(text.decode((await fs.read(".note.md.saddle"))!.subarray(0, 8))).toBe(
+    "SADDLE01",
+  );
   await a.remove("descriptor.json");
   expect(await a.list()).toEqual(["plugin/example"]);
 });
@@ -31,9 +31,9 @@ it("recovers the previous commit after a torn slot, and rejects damaged payloads
   bytes[144] ^= 1;
   await expect(records.read("metadata")).rejects.toThrow("Damaged");
   await fs.writeAtomic(".foreign.saddle", utf8.encode('{"format":1}'));
-  await expect(
-    new RecordFiles(fs, ".foreign.saddle").list(),
-  ).rejects.toThrow("Invalid SADDLE binary");
+  await expect(new RecordFiles(fs, ".foreign.saddle").list()).rejects.toThrow(
+    "Invalid SADDLE binary",
+  );
 });
 it("appends Automerge changes, reads only requested ranges and durably prunes deleted history", async () => {
   const fs = new CompanionFiles(),

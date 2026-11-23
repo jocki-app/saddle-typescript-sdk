@@ -1,7 +1,14 @@
 import type * as A from "@automerge/automerge";
 
-export {filePath, documentId} from "../filesystem.js";
-export type {VaultFileSystem, FileSystemEntry, FileSystemChange, RenameCandidate, RenameMatch, RenameMatcher} from "../filesystem.js";
+export { filePath, documentId } from "../filesystem.js";
+export type {
+  VaultFileSystem,
+  FileSystemEntry,
+  FileSystemChange,
+  RenameCandidate,
+  RenameMatch,
+  RenameMatcher,
+} from "../filesystem.js";
 export type FileKind = "text" | "binary";
 export interface TemplateReference {
   file: string;

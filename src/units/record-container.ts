@@ -367,8 +367,7 @@ export class RecordFiles implements VaultFileSystem {
         const result = new Uint8Array(end);
         if (prior) {
           const old = await this.fs.read(this.container);
-          if (!old)
-            throw Error("SADDLE container disappeared during update");
+          if (!old) throw Error("SADDLE container disappeared during update");
           result.set(old.subarray(0, offset));
         } else result.set(magic);
         if (bytes) result.set(bytes, offset);

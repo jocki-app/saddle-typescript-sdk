@@ -36,6 +36,10 @@ await operate({method: "history.configure", target: "/path/to/notes.md", state: 
 
 CSDB projection is an optional format adapter included with the unit engine; the file's ordinary CSDB text remains usable independently. The external CSDB dependency is vendored reproducibly. User-interface code, plugin execution and operating-system services belong to clients, not portable document state.
 
+## Native rename capability
+
+`npm run build:native` builds the pinned libgit2 helper from `native/renames`. A C compiler and CMake 3.24 or newer are required. Pass its executable to `Libgit2RenameMatcher`; no inode or alternate matching method is used. Jocki delegates its native helper build to these same sources.
+
 ## Packaging and conformance
 
 `npm pack` builds the package. Applications may use its tarball as a reproducible file dependency without another checkout. The format is defined in [saddle-specification](https://github.com/jocki-app/saddle-specification), with [Python tools](https://github.com/jocki-app/saddle-python-sdk), a [CLI](https://github.com/jocki-app/saddle-cli) and [documentation](https://jocki-app.github.io/saddle-website/).
