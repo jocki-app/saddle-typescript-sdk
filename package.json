@@ -1,0 +1,73 @@
+{
+  "name": "@jocki/saddle",
+  "version": "0.1.0",
+  "description": "The portable TypeScript implementation of SADDLE: durable named records, metadata, history, inheritance and approved peer synchronization.",
+  "license": "GPL-3.0-only",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jocki-app/saddle-typescript-sdk.git"
+  },
+  "homepage": "https://jocki-app.github.io/saddle-website/",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "docs",
+    "vendor"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./units/*": {
+      "types": "./dist/units/*.d.ts",
+      "import": "./dist/units/*.js"
+    },
+    "./crypto": {
+      "types": "./dist/crypto.d.ts",
+      "import": "./dist/crypto.js"
+    },
+    "./repository": {
+      "types": "./dist/repository.d.ts",
+      "import": "./dist/repository.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm test && npm run build",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "@automerge/automerge": "3.3.2",
+    "@automerge/automerge-repo": "2.6.0-subduction.49",
+    "@automerge/automerge-repo-keyhive": "0.7.0-alpha.1",
+    "@automerge/automerge-subduction": "0.20.1",
+    "@csvdatabase/csdb": "file:vendor/csvdatabase-csdb-0.0.0.tgz",
+    "mdast-util-to-string": "^4.0.0",
+    "remark-frontmatter": "^5.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.5",
+    "unist-util-visit": "^5.2.0",
+    "vscode-jsonrpc": "^10.0.0",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "5.0.3",
+    "@types/node": "^24.0.1"
+  },
+  "engines": {
+    "node": ">=26.10.0"
+  }
+}
