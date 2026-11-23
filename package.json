@@ -14,7 +14,9 @@
     "README.md",
     "LICENSE",
     "docs",
-    "vendor"
+    "vendor",
+    "native",
+    "scripts"
   ],
   "exports": {
     ".": {
@@ -40,6 +42,10 @@
     "./node/*": {
       "types": "./dist/node/*.d.ts",
       "import": "./dist/node/*.js"
+    },
+    "./filesystem": {
+      "types": "./dist/filesystem.d.ts",
+      "import": "./dist/filesystem.js"
     }
   },
   "scripts": {
@@ -47,7 +53,8 @@
     "build": "tsc",
     "test": "vitest run",
     "check": "npm run typecheck && npm test && npm run build",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "build:native": "node scripts/build-native.mjs"
   },
   "dependencies": {
     "@automerge/automerge": "3.3.2",
@@ -66,7 +73,8 @@
     "yaml": "^2.9.1",
     "zod": "^4.6.7",
     "fs-native-extensions": "^1.5.3",
-    "@automerge/automerge-repo-storage-nodefs": "2.6.0-subduction.49"
+    "@automerge/automerge-repo-storage-nodefs": "2.6.0-subduction.49",
+    "chokidar": "^6.0.0"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
@@ -75,5 +83,8 @@
   },
   "engines": {
     "node": ">=26.10.0"
-  }
+  },
+  "bundleDependencies": [
+    "@csvdatabase/csdb"
+  ]
 }

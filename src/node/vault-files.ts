@@ -15,21 +15,31 @@ import path from "node:path";
 import { tmpdir } from "node:os";
 import { createHash, randomUUID } from "node:crypto";
 import { tryLock, unlock } from "fs-native-extensions";
-import type {
-  FileSystemEntry,
-  VaultFileSystem,
-} from "../units/contracts.js";
+import type { FileSystemEntry, VaultFileSystem } from "../units/contracts.js";
 
 /** A selected root is the capability. Symlinks and traversal never leave it. */
 export class NodeVaultFiles implements VaultFileSystem {
-  private constructor(readonly root: string) {}
-  static async open(root: string, options: { create?: boolean } = {}) {
+  private constructor(
+    readonly root: string,
+    private readonly exclude: string[] = [],
+  ) {}
+  static async open(
+    root: string,
+    options: { create?: boolean; exclude?: string[] } = {},
+  ) {
     if (options.create !== false)
       await mkdir(root, { recursive: true, mode: 0o700 });
     const info = await lstat(root);
     if (info.isSymbolicLink() || !info.isDirectory())
       throw Error("Vault root must be a real directory");
-    return new NodeVaultFiles(await realpath(root));
+    for (const name of options.exclude ?? [])
+      if (
+        !name ||
+        name.startsWith("/") ||
+        name.split("/").some((part) => !part || part === ".." || part === ".")
+      )
+        throw Error("Invalid excluded capability path");
+    return new NodeVaultFiles(await realpath(root), options.exclude);
   }
   /** Kernel locks release on exit and are never copied with filesystem metadata. */
   async acquireWriter() {
@@ -60,7 +70,14 @@ export class NodeVaultFiles implements VaultFileSystem {
       }
     };
   }
+  private excluded(relative: string) {
+    return this.exclude.some(
+      (prefix) => relative === prefix || relative.startsWith(prefix + "/"),
+    );
+  }
   private async target(relative: string, create = false) {
+    if (this.excluded(relative))
+      throw Error("Path is outside the filesystem capability");
     if (
       !relative ||
       relative.startsWith("/") ||
@@ -311,6 +328,7 @@ export class NodeVaultFiles implements VaultFileSystem {
       pending = [root];
     while (pending.length) {
       const prefix = pending.pop()!;
+      if (this.excluded(prefix)) continue;
       // A rename can happen between readdir and stat. Retry just this directory
       // so a partial snapshot does not report both names as absent.
       for (let attempt = 0; attempt < 2; attempt++) {
@@ -337,6 +355,7 @@ export class NodeVaultFiles implements VaultFileSystem {
           )
             continue;
           const relative = prefix ? prefix + "/" + item.name : item.name;
+          if (this.excluded(relative)) continue;
           const entry = await this.stat(relative);
           if (!entry) {
             missing = true;
